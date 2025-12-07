@@ -157,7 +157,7 @@ Test safety:
 ## 🏗️ Project structure
 
 ```
-mental_health_bot/
+calm-mind-local-assistant/
 │
 ├─ app/
 │  ├─ core/ (system prompt + config)

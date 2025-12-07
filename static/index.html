@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mental Health Assistant</title>
+  <style>
+    :root {
+      --bg: #050816;
+      --card-bg: #0f172a;
+      --card-border: #1f2937;
+      --accent: #6366f1;
+      --accent-soft: rgba(99, 102, 241, 0.15);
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --bot-bubble: #111827;
+      --user-bubble: #4f46e5;
+      --danger: #f97373;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #1f2933 0, #020617 45%, #000 100%);
+      color: var(--text-main);
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 900px;
+      padding: 16px;
+    }
+
+    .card {
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: linear-gradient(135deg, #020617 0%, #020617 50%, #020617 100%);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      height: 80vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .header {
+      padding: 16px 20px 10px 20px;
+      border-bottom: 1px solid rgba(55, 65, 81, 0.7);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .title-block { display: flex; flex-direction: column; gap: 4px; }
+
+    .title-line { display: flex; align-items: center; gap: 8px; }
+
+    .title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 999px;
+      padding: 2px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+    }
+
+    .disclaimer {
+      font-size: 0.75rem;
+      color: #facc15;
+      background: rgba(24, 24, 27, 0.85);
+      border-top: 1px solid rgba(55, 65, 81, 0.7);
+      border-bottom: 1px solid rgba(55, 65, 81, 0.7);
+      padding: 6px 20px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .disclaimer-icon { font-size: 0.85rem; }
+
+    .chat-container {
+      padding: 14px 18px;
+      overflow-y: auto;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scroll-behavior: smooth;
+    }
+
+    .empty-state {
+      margin: auto;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      max-width: 310px;
+    }
+
+    .empty-title {
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #e5e7eb;
+    }
+
+    .chip-row {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.9);
+      transition: all 0.15s ease-out;
+      white-space: nowrap;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      color: #e5e7eb;
+      background: rgba(99, 102, 241, 0.16);
+    }
+
+    .msg-row { display: flex; margin-bottom: 4px; }
+
+    .msg-row.user { justify-content: flex-end; }
+
+    .msg-row.bot { justify-content: flex-start; }
+
+    .bubble {
+      max-width: 80%;
+      padding: 8px 11px;
+      border-radius: 14px;
+      font-size: 0.87rem;
+      line-height: 1.4;
+      position: relative;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .bubble.user {
+      background: var(--user-bubble);
+      color: #e5e7eb;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 8px 18px rgba(88, 80, 236, 0.55);
+    }
+
+    .bubble.bot {
+      background: var(--bot-bubble);
+      color: #e5e7eb;
+      border-bottom-left-radius: 4px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+    }
+
+    .bubble.bot.crisis {
+      border-color: var(--danger);
+      color: #fecaca;
+      background: #1f2937;
+    }
+
+    .meta {
+      margin-top: 2px;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .msg-row.bot .meta {
+      text-align: left;
+      margin-left: 2px;
+    }
+
+    .input-area {
+      padding: 10px 14px 12px 14px;
+      border-top: 1px solid rgba(55, 65, 81, 0.7);
+      background: radial-gradient(circle at bottom, rgba(15, 23, 42, 0.9), #020617);
+      position: relative;
+      z-index: 1;
+    }
+
+    .input-shell {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 999px;
+      border: 1px solid rgba(75, 85, 99, 0.8);
+      padding: 6px 8px 6px 12px;
+    }
+
+    .input-shell:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.8);
+    }
+
+    #input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      padding: 4px 0;
+    }
+
+    #input::placeholder { color: var(--text-muted); }
+
+    .send-btn {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 16px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.6);
+      transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, opacity 0.12s;
+    }
+
+    .send-btn span { font-size: 0.8rem; }
+
+    .send-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .send-btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(79, 70, 229, 0.8);
+    }
+
+    .typing-indicator {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 6px 0 6px;
+    }
+
+    .dots { display: inline-flex; gap: 3px; }
+
+    .dot-typing {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--text-muted);
+      animation: blink 1.2s infinite ease-in-out;
+    }
+
+    .dot-typing:nth-child(2) { animation-delay: 0.2s; }
+
+    .dot-typing:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
+      30% { opacity: 1; transform: translateY(-1px); }
+    }
+
+    @media (max-width: 640px) {
+      .card { height: 90vh; }
+      .bubble { max-width: 90%; }
+      .header { padding: 12px 14px 8px 14px; }
+      .chat-container { padding: 10px 12px; }
+      .input-area { padding: 8px 10px 10px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="card">
+      <div class="header">
+        <div class="title-block">
+          <div class="title-line">
+            <div class="title">Mental Health Assistant</div>
+            <div class="pill">Internal · Beta</div>
+          </div>
+          <div class="subtitle">Helps with stress, workload and low mood — not a doctor, not emergency care.</div>
+        </div>
+        <div class="status-dot">
+          <div class="dot"></div>
+          <span>Model: local small LLM</span>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <span class="disclaimer-icon">⚠️</span>
+        <span>This is not medical advice and not for emergencies. If you are in danger or considering self-harm, contact local emergency services or a trusted person immediately.</span>
+      </div>
+
+      <div id="chat" class="chat-container">
+        <div id="empty-state" class="empty-state">
+          <div class="empty-title">Ask about work stress, anxiety, or low mood.</div>
+          <div>Keep it real. I’ll try to give grounded, practical steps — not fake positivity.</div>
+          <div class="chip-row">
+            <div class="chip" data-text="I'm anxious about a presentation with senior management.">Presentation anxiety</div>
+            <div class="chip" data-text="I'm feeling exhausted and unmotivated at work for the last few weeks.">Burnout-ish feeling</div>
+            <div class="chip" data-text="My workload is too much and I can't say no to anyone.">Workload pressure</div>
+            <div class="chip" data-text="I'm overthinking a mistake I made in a client call.">Overthinking mistake</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <form id="chat-form" class="input-shell">
+          <input
+            id="input"
+            type="text"
+            autocomplete="off"
+            placeholder="Type how you're feeling or what's stressing you..."
+          />
+          <button id="send-btn" type="submit" class="send-btn">
+            <span>Send</span>
+            <span>➤</span>
+          </button>
+        </form>
+        <div id="typing" class="typing-indicator" style="display:none;">
+          <span>Assistant is thinking</span>
+          <span class="dots">
+            <span class="dot-typing"></span>
+            <span class="dot-typing"></span>
+            <span class="dot-typing"></span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    console.log("UI script loaded");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("DOM fully loaded");
+
+      const form = document.getElementById('chat-form');
+      const input = document.getElementById('input');
+      const messages = document.getElementById('chat');
+      const typing = document.getElementById('typing');
+      const sendBtn = document.getElementById('send-btn');
+      const emptyState = document.getElementById('empty-state');
+
+      if (!form || !input || !messages) {
+        console.error("Required elements not found", { form, input, messages });
+        return;
+      }
+
+      function nowTime() {
+        const d = new Date();
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      function hideEmptyState() {
+        if (emptyState) emptyState.style.display = 'none';
+      }
+
+      function addMessage(text, sender, isCrisis = false) {
+        hideEmptyState();
+
+        const row = document.createElement('div');
+        row.className = 'msg-row ' + (sender === 'user' ? 'user' : 'bot');
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble ' + (sender === 'user' ? 'user' : 'bot');
+        if (sender === 'bot' && isCrisis) bubble.classList.add('crisis');
+        bubble.textContent = text;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = nowTime();
+
+        const wrap = document.createElement('div');
+        wrap.appendChild(bubble);
+        wrap.appendChild(meta);
+
+        row.appendChild(wrap);
+        messages.appendChild(row);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function setTyping(visible) {
+        typing.style.display = visible ? 'flex' : 'none';
+      }
+
+      async function sendMessage(text) {
+        console.log("sendMessage called with:", text);
+        addMessage(text, 'user');
+        input.value = '';
+        setTyping(true);
+        sendBtn.disabled = true;
+
+        try {
+          console.log("Sending POST /chat");
+          const res = await fetch('http://localhost:8000/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, user_id: 'demo-user' }),
+          });
+
+          console.log("Response status:", res.status);
+
+          if (!res.ok) {
+            addMessage('Something broke on the backend. Try again later.', 'bot');
+          } else {
+            const data = await res.json();
+            console.log("Response JSON:", data);
+            const isCrisis = !!data.is_crisis;
+            addMessage(data.reply, 'bot', isCrisis);
+          }
+        } catch (err) {
+          console.error("Fetch error:", err);
+          addMessage('I could not reach the server. Check if FastAPI is running.', 'bot');
+        } finally {
+          setTyping(false);
+          sendBtn.disabled = false;
+          input.focus();
+        }
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        console.log("Form submit, text:", text);
+        if (!text) return;
+        sendMessage(text);
+      });
+
+      document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const text = chip.getAttribute('data-text');
+          if (!text) return;
+          sendMessage(text);
+        });
+      });
+
+      input.focus();
+    });
+  </script>
+</body>
+</html>
